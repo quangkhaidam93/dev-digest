@@ -102,9 +102,17 @@ func (m model) updateSources(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m model) viewSources() string {
 	help := helpStyle.Render("a add · e edit · d delete · r send now · p preview · s settings · c cron · u uncron · q quit")
 	body := m.list.View()
-	status := m.renderStatus()
-	if status != "" {
-		return body + "\n" + status + "\n" + help
+
+	var cronLine string
+	if m.cronRegistered {
+		cronLine = onStyle.Render("● cron registered") + helpStyle.Render("  "+m.cronSchedule+" daily")
+	} else {
+		cronLine = offStyle.Render("○ cron not registered") + helpStyle.Render("  press c to schedule")
 	}
-	return body + "\n" + help
+
+	out := body + "\n" + cronLine
+	if status := m.renderStatus(); status != "" {
+		out += "\n" + status
+	}
+	return out + "\n" + help
 }

@@ -45,6 +45,35 @@ func Install(e Entry) error {
 	return writeCrontab(updated)
 }
 
+// Status reports whether the managed dev-digest entry is present in the user's
+// crontab and, if so, its schedule/command line.
+func Status() (installed bool, line string, err error) {
+	content, err := readCrontab()
+	if err != nil {
+		return false, "", err
+	}
+	installed, line = parseStatus(content)
+	return installed, line, nil
+}
+
+// parseStatus extracts whether the managed block exists (and its command line)
+// from crontab content.
+func parseStatus(content string) (bool, string) {
+	inBlock := false
+	for _, ln := range strings.Split(content, "\n") {
+		t := strings.TrimSpace(ln)
+		switch {
+		case t == markerBegin:
+			inBlock = true
+		case t == markerEnd:
+			inBlock = false
+		case inBlock && t != "":
+			return true, t
+		}
+	}
+	return false, ""
+}
+
 // Uninstall removes the managed block from the user's crontab.
 func Uninstall() error {
 	current, err := readCrontab()

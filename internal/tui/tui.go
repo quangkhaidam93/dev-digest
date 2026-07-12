@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textarea"
@@ -47,9 +48,27 @@ func Run(path string) error {
 		return err
 	}
 	m := newModel(cfg, path, sp)
+	m.refreshCronStatus()
 	p := tea.NewProgram(m, tea.WithAltScreen())
 	_, err = p.Run()
 	return err
+}
+
+// refreshCronStatus queries the crontab once and caches whether dev-digest's
+// entry is registered plus its schedule fields.
+func (m *model) refreshCronStatus() {
+	installed, line, err := cron.Status()
+	if err != nil || !installed {
+		m.cronRegistered = false
+		m.cronSchedule = ""
+		return
+	}
+	m.cronRegistered = true
+	if f := strings.Fields(line); len(f) >= 5 {
+		m.cronSchedule = strings.Join(f[:5], " ")
+	} else {
+		m.cronSchedule = line
+	}
 }
 
 type model struct {
@@ -68,6 +87,9 @@ type model struct {
 	width, height int
 	status        string
 	statusErr     bool
+
+	cronRegistered bool
+	cronSchedule   string // the "M H * * *" fields of the registered entry
 }
 
 func newModel(cfg config.Config, path, storePath string) model {
@@ -187,6 +209,7 @@ func (m *model) installCron() {
 		m.setStatus("cron install failed: "+err.Error(), true)
 		return
 	}
+	m.refreshCronStatus()
 	m.setStatus("installed cron: "+entry.Line(), false)
 }
 
@@ -195,5 +218,6 @@ func (m *model) uninstallCron() {
 		m.setStatus("cron uninstall failed: "+err.Error(), true)
 		return
 	}
+	m.refreshCronStatus()
 	m.setStatus("removed cron entry", false)
 }

@@ -81,6 +81,7 @@ binary into your Go bin dir. After updating, run `dev-digest version` to confirm
 dev-digest                 # interactive TUI (manage sources, settings, preview, cron)
 dev-digest run             # headless: fetch → summarize → deliver (this is what cron runs)
 dev-digest cron install    # add a daily crontab entry (at [schedule].daily_time) running `dev-digest run`
+dev-digest cron status     # show whether the crontab entry is registered (and its schedule)
 dev-digest cron uninstall  # remove just the crontab entry
 dev-digest uninstall       # remove the cron entry + the binary (keeps config/state)
 dev-digest uninstall --complete  # also delete all config and state

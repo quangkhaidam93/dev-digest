@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"runtime/debug"
+	"strings"
 	"syscall"
 	"time"
 
@@ -32,7 +33,7 @@ const defaultModulePath = "github.com/quangkhaidam93/dev-digest"
 // version is the released version. Overridable at build time via
 // -ldflags "-X main.version=…"; if set to empty it falls back to the embedded
 // build info (VCS pseudo-version).
-var version = "v1.0.0"
+var version = "v1.0.1"
 
 func main() {
 	if err := run(os.Args[1:]); err != nil {
@@ -105,6 +106,7 @@ Commands:
   tui                    Launch the interactive TUI (default)
   run                    Fetch, summarize, and deliver a digest (used by cron)
   cron install           Install a daily crontab entry that runs `+"`dev-digest run`"+`
+  cron status            Show whether the crontab entry is registered
   cron uninstall         Remove the crontab entry
   uninstall              Remove the cron entry and delete the dev-digest binary
   uninstall --complete   Also delete the config and state (all settings/data)
@@ -228,8 +230,26 @@ func cmdCron(path string, args []string) error {
 		}
 		fmt.Println("removed dev-digest cron entry")
 		return nil
+	case "status", "":
+		installed, line, err := cron.Status()
+		if err != nil {
+			return err
+		}
+		if !installed {
+			fmt.Println("cron: not registered — run `dev-digest cron install`")
+			return nil
+		}
+		fmt.Printf("cron: registered\n  %s\n", line)
+		// Note if the registered time differs from the current config.
+		if cfg, _, cerr := config.Load(path); cerr == nil {
+			if expr, eerr := cfg.Schedule.CronExpr(); eerr == nil && !strings.HasPrefix(line, expr+" ") {
+				fmt.Printf("  note: config schedule is %q (%s) — run `cron install` to update\n",
+					cfg.Schedule.ResolvedDailyTime(), expr)
+			}
+		}
+		return nil
 	default:
-		return fmt.Errorf("cron: expected 'install' or 'uninstall'")
+		return fmt.Errorf("cron: expected 'install', 'uninstall', or 'status'")
 	}
 }
 

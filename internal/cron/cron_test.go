@@ -20,6 +20,31 @@ func TestEntryLine(t *testing.T) {
 	}
 }
 
+func TestParseStatus(t *testing.T) {
+	// Not present.
+	if ok, _ := parseStatus("0 0 * * * /other/job\n"); ok {
+		t.Error("expected not-installed for a crontab without the managed block")
+	}
+	if ok, _ := parseStatus(""); ok {
+		t.Error("expected not-installed for an empty crontab")
+	}
+
+	// Present: returns the command line inside the managed block.
+	content := strings.Join([]string{
+		"0 0 * * * /other/job",
+		markerBegin,
+		"30 21 * * * /bin/dev-digest run",
+		markerEnd,
+	}, "\n")
+	ok, line := parseStatus(content)
+	if !ok {
+		t.Fatal("expected installed")
+	}
+	if line != "30 21 * * * /bin/dev-digest run" {
+		t.Errorf("line = %q", line)
+	}
+}
+
 func TestReplaceBlockIdempotent(t *testing.T) {
 	existing := "0 0 * * * /some/other/job\n"
 	block := strings.Join([]string{markerBegin, "0 8 * * * /bin/dd run", markerEnd}, "\n")
