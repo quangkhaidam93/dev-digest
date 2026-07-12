@@ -1,11 +1,40 @@
 # dev-digest
 
-A single-binary Go TUI that aggregates new developer content — **RSS/Atom feeds**,
-**GitHub releases/tags**, and **dev/changelog web pages** — and turns it into a daily
-newsletter. Claude writes a witty _"Today's issue…"_ intro plus short per-item
-summaries (Bytes-newsletter style); the result is rendered to Markdown + HTML and
-delivered to any combination of **file**, **email (SMTP)**, and **chat webhook**
-(Slack / Discord / generic). Run it daily via cron.
+**Your own daily developer newsletter, assembled from the sources you actually care about.**
+
+Staying current on framework releases, library updates, and dev blogs usually means
+visiting a dozen changelogs and re-reading things you've already seen. dev-digest does that
+scan for you: once a day it collects what's **new** across your configured sources, has an
+LLM write a concise, Bytes-style briefing (a witty _"Today's issue…"_ intro plus a short
+summary per item), and delivers it wherever you read — a file, your inbox, or a chat
+channel. Keeping up becomes a 60-second read instead of a chore, and on quiet days it still
+nudges you with a short learning question so the habit sticks.
+
+It's a single static Go binary with an interactive terminal UI for setup and a one-shot
+`run` command that a daily cron job invokes.
+
+## What it does
+
+- **Aggregates** new content from three source types — **RSS/Atom feeds**, **GitHub
+  releases/tags**, and **dev/changelog web pages** (change-detected by content hash).
+- **Filters to what's new** since the last run: an age window (default: the last 24h) plus
+  first-run seeding, so a newly added source never dumps its whole backlog at you.
+- **Summarizes with an LLM** — **Anthropic**, **Google Gemini**, or **OpenRouter** — into an
+  intro and per-item summaries grouped into sections. Falls back to raw aggregation if the
+  model is unavailable, so a run never fails silently.
+- **Delivers** the same digest as **Markdown + HTML** to any combination of **file**,
+  **email (SMTP)**, and **chat webhook** (Slack / Discord / generic) — channels are
+  independent.
+- **Fills quiet days**: when nothing is new it sends an AI **question of the day** (an SE
+  fact, code smell, data structure/algorithm, system-design prompt, …) with an offline
+  fallback, so a notification always arrives.
+- **Runs daily via cron** at a time you pick; the app writes and manages its own crontab
+  entry and can tell you whether it's registered.
+- **Fully TUI-managed** — sources, provider/model/API keys, delivery channels, the schedule,
+  and even the question prompt are all editable in the terminal. Config is plain TOML you can
+  also hand-edit.
+- **Self-contained**: single binary, no runtime dependencies; self-updating
+  (`dev-digest update`) and cleanly removable (`dev-digest uninstall [--complete]`).
 
 ## Install
 
@@ -197,13 +226,17 @@ gemini = "…"        # takes precedence over $GEMINI_API_KEY
 If a provider has no key in `[keys]`, its environment variable is used as a fallback, so
 either approach works.
 
-## Secrets (environment, never in config)
+## Secrets
+
+Provider API keys and the SMTP password can be set in the TUI and are stored in the config
+file (written `0600`), **or** supplied via environment variables — whichever you prefer. If
+a secret isn't in the config, the matching env var below is used as a fallback:
 
 | Variable | Purpose |
 |---|---|
-| `ANTHROPIC_API_KEY` / `GEMINI_API_KEY` / `OPENROUTER_API_KEY` | API key for the selected provider (see table above). |
+| `ANTHROPIC_API_KEY` / `GEMINI_API_KEY` (or `GOOGLE_API_KEY`) / `OPENROUTER_API_KEY` | API key for the selected provider. |
 | `GITHUB_TOKEN` | Optional — lifts the GitHub API rate limit. |
-| `DEV_DIGEST_SMTP_PASSWORD` | Required when email delivery is enabled. |
+| `DEV_DIGEST_SMTP_PASSWORD` | SMTP password for email delivery (if not set in config). |
 
 ## How a run works
 
