@@ -33,7 +33,7 @@ const defaultModulePath = "github.com/quangkhaidam93/dev-digest"
 // version is the released version. Overridable at build time via
 // -ldflags "-X main.version=…"; if set to empty it falls back to the embedded
 // build info (VCS pseudo-version).
-var version = "v1.0.1"
+var version = "v1.0.2"
 
 func main() {
 	if err := run(os.Args[1:]); err != nil {
@@ -389,8 +389,55 @@ func cmdUpdate(args []string) error {
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("update failed (needs network; the module must be published): %w", err)
 	}
-	fmt.Println("updated — run `dev-digest version` to confirm.")
+
+	// Verify what actually got installed and compare to the running version.
+	before := "dev-digest " + versionString()
+	after := installedVersionLine()
+	if after != "" {
+		fmt.Printf("installed: %s\n", after)
+		if ref == "latest" && after == before {
+			fmt.Println("note: version is unchanged. The Go module proxy may not have indexed the")
+			fmt.Println("      newest tag yet. Pin it explicitly, e.g. `dev-digest update v1.2.3`,")
+			fmt.Println("      or bypass the proxy cache: `GOPROXY=direct dev-digest update`.")
+			return nil
+		}
+	}
+	fmt.Println("done — run `dev-digest version` to confirm.")
 	return nil
+}
+
+// installedVersionLine runs the freshly installed binary's `version` and returns
+// its first line (e.g. "dev-digest v1.2.3"), or "" if it can't be determined.
+func installedVersionLine() string {
+	dir := goBinDir()
+	if dir == "" {
+		return ""
+	}
+	out, err := exec.Command(filepath.Join(dir, "dev-digest"), "version").Output()
+	if err != nil {
+		return ""
+	}
+	line, _, _ := strings.Cut(string(out), "\n")
+	return strings.TrimSpace(line)
+}
+
+// goBinDir returns the directory `go install` writes binaries to.
+func goBinDir() string {
+	if b := goEnv("GOBIN"); b != "" {
+		return b
+	}
+	if p := goEnv("GOPATH"); p != "" {
+		return filepath.Join(p, "bin")
+	}
+	return ""
+}
+
+func goEnv(key string) string {
+	out, err := exec.Command("go", "env", key).Output()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(out))
 }
 
 // removeAllSettings deletes the config and state directories, returning the

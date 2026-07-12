@@ -68,7 +68,12 @@ dev-digest update v1.3.0  # or pin a specific version
 
 `update` runs `go install <module>@latest` (or `@<version>`), so it needs the Go toolchain
 on your `PATH` and the module to be published; it fetches, builds, and installs the new
-binary into your Go bin dir. After updating, run `dev-digest version` to confirm.
+binary into your Go bin dir, then reports the installed version.
+
+> **Just released a tag and `update` still shows the old version?** The Go module proxy
+> caches the `@latest` version list, so a brand-new tag can take a little while to appear.
+> `update` detects this and tells you to either pin the version — `dev-digest update v1.2.3`
+> — or bypass the proxy cache: `GOPROXY=direct dev-digest update`.
 
 > **Version stamping:** a `go build`/`go install` from a clone reports Go's VCS-derived
 > pseudo-version (commit + `dirty`). To bake in a release string, build with

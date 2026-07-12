@@ -12,8 +12,8 @@ import (
 
 func TestVersionString(t *testing.T) {
 	// The baked-in release version is reported by default.
-	if got := versionString(); got != "v1.0.1" {
-		t.Errorf("default version = %q, want v1.0.1", got)
+	if got := versionString(); got != "v1.0.2" {
+		t.Errorf("default version = %q, want v1.0.2", got)
 	}
 	// A build-time override wins.
 	old := version
