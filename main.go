@@ -33,7 +33,7 @@ const defaultModulePath = "github.com/quangkhaidam93/dev-digest"
 // version is the released version. Overridable at build time via
 // -ldflags "-X main.version=…"; if set to empty it falls back to the embedded
 // build info (VCS pseudo-version).
-var version = "v1.0.2"
+var version = "v1.0.3"
 
 func main() {
 	if err := run(os.Args[1:]); err != nil {
