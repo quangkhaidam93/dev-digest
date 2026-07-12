@@ -1,0 +1,5 @@
+# Compiled binary
+/dev-digest
+
+# Default file-delivery output
+/out/
